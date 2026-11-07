@@ -9,6 +9,7 @@
     "test-db": "node services/databaseService.js"
   },
   "dependencies": {
+    "@napi-rs/canvas": "^1.1.0",
     "discord.js": "^14.14.1",
     "dompurify": "^3.0.6",
     "dotenv": "^16.6.1",

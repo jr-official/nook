@@ -7,6 +7,7 @@ const ticketsFeature   = require('./features/tickets/tickets');
 const moderationFeature = require('./features/moderation/moderation');
 const rolesFeature     = require('./features/roles/roles');
 const mediaFeature     = require('./features/media/media');
+const levelingFeature  = require('./features/leveling/leveling');
 
 const client = new Client({
     intents: [
@@ -25,9 +26,10 @@ async function initializeBot() {
         await databaseService.connect();
 
         ticketsFeature(client);
-        // Media MUST be initialised before moderation: moderation registers all
+        // Media and leveling MUST be initialised before moderation: moderation registers all
         // slash commands in one call and picks up client.extraSlashCommands.
         mediaFeature(client);
+        levelingFeature(client);
         moderationFeature(client);
         rolesFeature(client);
 

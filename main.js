@@ -8,6 +8,7 @@ const moderationFeature = require('./features/moderation/moderation');
 const rolesFeature     = require('./features/roles/roles');
 const mediaFeature     = require('./features/media/media');
 const levelingFeature  = require('./features/leveling/leveling');
+const dashboardFeature = require('./features/dashboard/dashboard');
 
 const client = new Client({
     intents: [
@@ -32,6 +33,7 @@ async function initializeBot() {
         levelingFeature(client);
         moderationFeature(client);
         rolesFeature(client);
+        dashboardFeature(client);   // web API for the Nook website (disabled unless configured)
 
         console.log('🤖 Bot features initialized');
     } catch (error) {

@@ -10,9 +10,9 @@ function compact(n) {
     return (n / 1e6).toFixed(n < 1e7 ? 2 : 1).replace(/\.?0+$/, '') + 'M';
 }
 
-// Replace {user} {username} {level} {xp} {server} in an admin-written template.
+// Replace {user} {username} {level} {xp} {server} {title} in an admin-written template.
 function renderTemplate(template, vars) {
-    return String(template).replace(/\{(user|username|level|xp|server)\}/gi, (_, k) => {
+    return String(template).replace(/\{(user|username|level|xp|server|title)\}/gi, (_, k) => {
         const v = vars[k.toLowerCase()];
         return v === undefined || v === null ? '' : String(v);
     });

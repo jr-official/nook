@@ -44,6 +44,7 @@ Every `/api/guilds/:id/...` call re-checks, live, that the bot is in the server 
 | PUT | `/api/guilds/:id/leveling` | partial settings update (validated with the same limits as `/level-config`) |
 | GET | `/api/guilds/:id/leveling/leaderboard?period=&page=` | leaderboard |
 | GET | `/api/guilds/:id/leveling/members/:userId` | one member's XP / level / rank |
+| POST | `/api/guilds/:id/leveling/ladder` | create/match the 11 rank-ladder roles and add them as rewards |
 | POST | `/api/guilds/:id/leveling/xp` | `{userId, mode: add|remove|set|reset, amount}` |
 
 Limits: 120 requests/min per session, 20 auth attempts/min per IP, 64 KB request bodies, CORS restricted to

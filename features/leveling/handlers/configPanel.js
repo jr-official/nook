@@ -75,7 +75,7 @@ function render(section, c, guild) {
         e.addFields(
             { name: 'Announcements', value: c.announce.enabled ? '🟢 On' : '🔴 Off', inline: true },
             { name: 'Channel', value: ch, inline: true },
-            { name: 'Message', value: `\`\`\`${c.announce.message.replace(/`/g, "'")}\`\`\`\nPlaceholders: \`{user}\` \`{username}\` \`{level}\` \`{xp}\` \`{server}\`` }
+            { name: 'Message', value: `\`\`\`${c.announce.message.replace(/`/g, "'")}\`\`\`\nPlaceholders: \`{user}\` \`{username}\` \`{level}\` \`{title}\` \`{xp}\` \`{server}\`` }
         ).setFooter({ text: 'When a level-up unlocks a role reward, the bot adds a line about it. Off = no messages at all.' });
         comps.push(row(
             btn('lvl:cfg:atoggle', c.announce.enabled ? 'Turn off' : 'Turn on', c.announce.enabled ? ButtonStyle.Danger : ButtonStyle.Success),
@@ -205,7 +205,7 @@ async function handleComponent(interaction) {
         case 'aclear':  return show('announce', await configService.update(guildId, { announce: { ...c.announce, channelId: null } }));
         case 'amsg':
             return interaction.showModal(modal('lvl:cfg:amsg', 'Level-up message',
-                input('msg', 'Message ({user} {username} {level} {xp} {server})', { value: c.announce.message, style: TextInputStyle.Paragraph, max: LIMITS.MAX_MESSAGE_LENGTH })));
+                input('msg', 'Message ({user} {level} {title} {xp} {server})', { value: c.announce.message, style: TextInputStyle.Paragraph, max: LIMITS.MAX_MESSAGE_LENGTH })));
         case 'achan': {
             const channel = interaction.channels?.first() ?? interaction.guild.channels.cache.get(interaction.values[0]);
             const me = interaction.guild.members.me;

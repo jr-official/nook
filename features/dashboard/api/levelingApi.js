@@ -8,6 +8,7 @@ const xpService = require('../../leveling/services/xpService');
 const rewardService = require('../../leveling/services/rewardService');
 const { validateProgression, levelFromXp, progress, totalXpForLevel } = require('../../leveling/utils/levelMath');
 const { HttpError } = require('../services/guildAccess');
+const ladder = require('../../leveling/config/ladder');
 
 const { LIMITS } = cfgL;
 const TEXT_TYPES = new Set([ChannelType.GuildText, ChannelType.GuildAnnouncement]);
@@ -45,6 +46,7 @@ async function guildSnapshot(guild) {
         roles: roleList(guild),
         leveling: publicConfig(leveling),
         limits: LIMITS,
+        ladder: { titles: ladder.TITLES, tiers: ladder.TIERS },
         presets: Object.entries(cfgL.PRESETS).map(([id, p]) => ({ id, label: p.label, a: p.a, b: p.b, c: p.c })),
         ranked: await xpService.countMembers(guild.id)
     };
@@ -191,4 +193,38 @@ async function postXp({ guild, body, session }) {
     return { mode, ...r, grantedRoles: sync.granted.map(x => x.name), removedRoles: sync.removed.map(x => x.name), problems: sync.problems };
 }
 
-module.exports = { getGuild, putSettings, getLeaderboard, getMember, postXp, validateUpdate, guildSnapshot };
+// Creates (or matches by name) the ladder's milestone roles and adds them as rewards.
+// Existing rewards are kept; a ladder role that already is a reward is left alone.
+async function postLadder({ guild, session }) {
+    const me = guild.members.me;
+    if (!me?.permissions.has(PermissionFlagsBits.ManageRoles)) throw bad('Give Nook the Manage Roles permission first, then try again.');
+    const config = await configService.get(guild.id);
+    const rewards = [...config.rewards];
+    const out = { created: [], matched: [], skipped: [], added: 0 };
+    console.log(`📝 [dashboard] ${session.userId} applied the rank ladder in ${guild.id}`);
+
+    for (const tier of ladder.TIERS) {
+        let role = [...guild.roles.cache.values()].find(r => r.id !== guild.id && r.name.toLowerCase() === tier.role.toLowerCase());
+        if (role) {
+            out.matched.push(tier.role);
+        } else {
+            try {
+                role = await guild.roles.create({ name: tier.role, color: tier.color, hoist: false, mentionable: false, permissions: [], reason: 'Nook rank ladder (dashboard)' });
+                out.created.push(tier.role);
+            } catch (err) {
+                out.skipped.push({ name: tier.role, reason: `could not create the role (${err.code || err.message})` });
+                continue;
+            }
+        }
+        if (rewards.some(r => r.roleId === role.id)) continue;
+        const problem = rewardService.roleProblem(guild, role);
+        if (problem) { out.skipped.push({ name: tier.role, reason: problem }); continue; }
+        if (rewards.length >= LIMITS.MAX_REWARDS) { out.skipped.push({ name: tier.role, reason: `the ${LIMITS.MAX_REWARDS}-reward limit is reached` }); continue; }
+        rewards.push({ level: tier.level, roleId: role.id });
+        out.added++;
+    }
+    const next = await configService.update(guild.id, { rewards });
+    return { ...out, leveling: publicConfig(next) };
+}
+
+module.exports = { postLadder, getGuild, putSettings, getLeaderboard, getMember, postXp, validateUpdate, guildSnapshot };

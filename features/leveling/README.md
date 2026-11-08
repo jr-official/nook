@@ -31,7 +31,7 @@ all-time / weekly / monthly leaderboards. Everything is configured per server wi
 
 * **General** – enable/disable, XP range, cooldown, progression preset or custom formula.
 * **Announcements** – on/off, channel (default: where the member chatted), message text with
-  `{user} {username} {level} {xp} {server}`. Only the member is ever pinged.
+  `{user} {username} {level} {title} {xp} {server}` (`{title}` = the level's rank-ladder title, e.g. "Hearth Warden"). Only the member is ever pinged.
 * **Ignored** – channels (threads inherit) and roles that earn no XP.
 * **Role rewards** – pick a role → enter the level. *Stack* keeps every role; *Replace* keeps only the newest milestone.
 * **Manual XP** – add / remove / set a member's XP, or reset them (type RESET).

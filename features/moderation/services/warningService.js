@@ -94,11 +94,10 @@ class WarningService {
             await this._col().createIndexes([
                 { key: { guildId: 1, userId: 1, active: 1 } },
                 { key: { guildId: 1, active: 1 } },
-                // FIX: removed `sparse: true` from the caseId index. Every document
-                // inserted by addWarning has a caseId field, so sparse does nothing
-                // except mislead developers into thinking null caseIds are intentional.
-                // A plain unique index is correct and more honest.
-                { key: { caseId: 1 }, unique: true },
+                // Must stay `sparse: true`: the live database already has caseId_1 created as
+                // sparse, and MongoDB refuses to create an index with the same name but different
+                // options (IndexKeySpecsConflict), which made this whole call fail on every start.
+                { key: { caseId: 1 }, unique: true, sparse: true },
                 { key: { createdAt: -1 } }
             ]);
             console.log('✅ Warning indexes ensured');

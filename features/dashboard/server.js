@@ -64,7 +64,8 @@ function createServer(client) {
         ['PUT',  /^\/api\/guilds\/(\d+)\/leveling$/,                levelingApi.putSettings],
         ['GET',  /^\/api\/guilds\/(\d+)\/leveling\/leaderboard$/,   levelingApi.getLeaderboard],
         ['GET',  /^\/api\/guilds\/(\d+)\/leveling\/members\/(\d+)$/, levelingApi.getMember],
-        ['POST', /^\/api\/guilds\/(\d+)\/leveling\/xp$/,            levelingApi.postXp]
+        ['POST', /^\/api\/guilds\/(\d+)\/leveling\/xp$/,            levelingApi.postXp],
+        ['POST', /^\/api\/guilds\/(\d+)\/leveling\/ladder$/,        levelingApi.postLadder]
     ];
 
     async function handle(req, res) {

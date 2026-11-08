@@ -6,6 +6,7 @@ const xpService = require('../services/xpService');
 const rewardService = require('../services/rewardService');
 const antiSpam = require('../utils/antiSpam');
 const { renderTemplate } = require('../utils/format');
+const { titleForLevel } = require('../config/ladder');
 
 const XP_CHANNEL_TYPES = new Set([
     ChannelType.GuildText, ChannelType.GuildAnnouncement,
@@ -92,7 +93,7 @@ async function announce({ guild, fallbackChannel, user, xp, level, granted, conf
     if (!channel) return;
 
     let text = renderTemplate(config.announce.message, {
-        user: `<@${user.id}>`, username: user.username, level, xp, server: guild.name
+        user: `<@${user.id}>`, username: user.username, level, xp, server: guild.name, title: titleForLevel(level)
     });
     if (granted.length) text += `\n🏅 You unlocked ${granted.map(r => `**${r.name.replace(/[*_`~|>]/g, '')}**`).join(', ')}!`;
 

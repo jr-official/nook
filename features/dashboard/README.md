@@ -49,3 +49,16 @@ Every `/api/guilds/:id/...` call re-checks, live, that the bot is in the server 
 
 Limits: 120 requests/min per session, 20 auth attempts/min per IP, 64 KB request bodies, CORS restricted to
 `DASHBOARD_ORIGIN`. Collections: `dashboard_sessions`, `dashboard_oauth_states` (both TTL-indexed).
+
+## Public leaderboard (opt-in)
+
+Admins can switch on a public leaderboard for their server in the dashboard (Leaderboard tab).
+The page lives on the website at `/nook/leaderboard/<link-name>` and reads:
+
+`GET /api/public/leaderboard/:linkName?period=alltime|weekly|monthly&page=0`
+
+- No login. Off by default; a server that is private, unknown, or one the bot isn't in all return the same `404`.
+- Link names: 3 to 32 characters (letters, numbers, dashes, at least one letter), unique across servers. The server id also works while the leaderboard is public.
+- Shows display name, avatar, level, XP and rank title only. User IDs are never returned.
+- 25 rows per page, top 1000 only, 30 s server cache, 60 requests per minute per IP.
+- Settings: `leaderboard: { public: boolean, slug: string | null }` on `PUT /api/guilds/:id/leveling`; a taken name answers `409 slug_taken`.

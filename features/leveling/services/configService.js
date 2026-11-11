@@ -21,12 +21,15 @@ function withDefaults(doc) {
         rewardMode: doc?.rewardMode === 'replace' ? 'replace' : 'stack',
         rewards: Array.isArray(doc?.rewards) ? doc.rewards : [],
         ignoredChannels: Array.isArray(doc?.ignoredChannels) ? doc.ignoredChannels : [],
-        ignoredRoles: Array.isArray(doc?.ignoredRoles) ? doc.ignoredRoles : []
+        ignoredRoles: Array.isArray(doc?.ignoredRoles) ? doc.ignoredRoles : [],
+        leaderboard: { public: doc?.leaderboard?.public === true, slug: typeof doc?.leaderboard?.slug === 'string' ? doc.leaderboard.slug : null }
     };
 }
 
 async function ensureIndexes() {
     await col().createIndex({ guildId: 1 }, { unique: true });
+    // Public leaderboard link names are unique across servers (only enforced when a slug is set).
+    await col().createIndex({ 'leaderboard.slug': 1 }, { unique: true, partialFilterExpression: { 'leaderboard.slug': { $type: 'string' } } });
 }
 
 async function get(guildId) {
@@ -63,4 +66,11 @@ async function pruneChannel(guildId, channelId) {
     if (Object.keys(changes).length) await update(guildId, changes);
 }
 
-module.exports = { ensureIndexes, get, update, pruneRole, pruneChannel, _clearCache: () => cache.clear() };
+// Finds a server whose leaderboard is public by its link name (or its id). Returns the config or null.
+async function findPublic(key) {
+    const filter = /^\d{15,25}$/.test(key) ? { guildId: key } : { 'leaderboard.slug': key };
+    const doc = await col().findOne({ ...filter, 'leaderboard.public': true });
+    return doc ? withDefaults(doc) : null;
+}
+
+module.exports = { ensureIndexes, get, update, findPublic, pruneRole, pruneChannel, _clearCache: () => cache.clear() };

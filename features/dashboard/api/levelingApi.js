@@ -16,6 +16,7 @@ const IGNORABLE_TYPES = new Set([ChannelType.GuildText, ChannelType.GuildAnnounc
 
 const bad = msg => new HttpError(400, 'invalid', msg);
 const isInt = (v, min, max) => Number.isInteger(v) && v >= min && v <= max;
+const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{1,30})[a-z0-9]$/;
 const isSnowflake = v => typeof v === 'string' && /^\d{15,25}$/.test(v);
 
 // ── Guild snapshot ───────────────────────────────────────────────────────────
@@ -56,7 +57,7 @@ function publicConfig(c) {
     return {
         enabled: c.enabled, xpMin: c.xpMin, xpMax: c.xpMax, cooldownSec: c.cooldownSec, progression: c.progression,
         announce: c.announce, rewardMode: c.rewardMode, rewards: [...c.rewards].sort((a, b) => a.level - b.level),
-        ignoredChannels: c.ignoredChannels, ignoredRoles: c.ignoredRoles
+        ignoredChannels: c.ignoredChannels, ignoredRoles: c.ignoredRoles, leaderboard: c.leaderboard
     };
 }
 
@@ -64,7 +65,7 @@ function publicConfig(c) {
 function validateUpdate(body, current, guild) {
     if (!body || typeof body !== 'object' || Array.isArray(body)) throw bad('Send a JSON object.');
     const changes = {};
-    const allowed = ['enabled', 'xpMin', 'xpMax', 'cooldownSec', 'progression', 'announce', 'rewardMode', 'rewards', 'ignoredChannels', 'ignoredRoles'];
+    const allowed = ['enabled', 'xpMin', 'xpMax', 'cooldownSec', 'progression', 'announce', 'rewardMode', 'rewards', 'ignoredChannels', 'ignoredRoles', 'leaderboard'];
     for (const k of Object.keys(body)) if (!allowed.includes(k)) throw bad(`Unknown setting "${k}".`);
 
     if ('enabled' in body) { if (typeof body.enabled !== 'boolean') throw bad('enabled must be true or false.'); changes.enabled = body.enabled; }
@@ -124,6 +125,21 @@ function validateUpdate(body, current, guild) {
             return { level: r.level, roleId: r.roleId };
         });
     }
+    if ('leaderboard' in body) {
+        const l = body.leaderboard;
+        if (!l || typeof l !== 'object' || Array.isArray(l)) throw bad('leaderboard must be an object.');
+        const next = { ...current.leaderboard };
+        if ('public' in l) { if (typeof l.public !== 'boolean') throw bad('leaderboard.public must be true or false.'); next.public = l.public; }
+        if ('slug' in l) {
+            if (l.slug === null || l.slug === '') next.slug = null;
+            else {
+                const slug = typeof l.slug === 'string' ? l.slug.trim().toLowerCase() : '';
+                if (!SLUG_RE.test(slug) || !/[a-z]/.test(slug)) throw bad('Link names are 3 to 32 characters: letters, numbers and dashes, with at least one letter, not starting or ending with a dash.');
+                next.slug = slug;
+            }
+        }
+        changes.leaderboard = next;
+    }
     for (const [key, valid] of [['ignoredChannels', id => IGNORABLE_TYPES.has(guild.channels.cache.get(id)?.type)], ['ignoredRoles', id => guild.roles.cache.has(id) && id !== guild.id]]) {
         if (!(key in body)) continue;
         const arr = body[key];
@@ -140,7 +156,9 @@ async function getGuild({ guild }) { return guildSnapshot(guild); }
 async function putSettings({ guild, body }) {
     const current = await configService.get(guild.id);
     const { changes, progressionChanged } = validateUpdate(body, current, guild);
-    const next = await configService.update(guild.id, changes);
+    let next;
+    try { next = await configService.update(guild.id, changes); }
+    catch (err) { if (err?.code === 11000) throw new HttpError(409, 'slug_taken', 'That link name is already taken. Try another.'); throw err; }
     if (progressionChanged) await xpService.recomputeLevels(guild.id, next.progression).catch(err => console.error('❌ [dashboard] recompute failed:', err.message));
     return { leveling: publicConfig(next) };
 }

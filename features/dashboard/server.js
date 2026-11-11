@@ -7,6 +7,7 @@ const sessionService = require('./services/sessionService');
 const oauth = require('./services/discordOAuth');
 const { requireManager, HttpError } = require('./services/guildAccess');
 const levelingApi = require('./api/levelingApi');
+const publicApi = require('./api/publicApi');
 const { PermissionFlagsBits } = require('discord.js');
 
 const MANAGE_GUILD = PermissionFlagsBits.ManageGuild;
@@ -110,6 +111,14 @@ function createServer(client) {
             const id = oauth.clientId(client);
             const invite = `https://discord.com/oauth2/authorize?client_id=${id}&scope=bot%20applications.commands&permissions=${cfg.INVITE_PERMISSIONS}`;
             return send(res, 200, { clientId: id, inviteUrl: invite }, cors);
+        }
+
+        // ── public leaderboards (opt-in per server, read-only, no login) ─────
+        const pub = path.match(/^\/api\/public\/leaderboard\/([a-z0-9-]{1,40})$/);
+        if (pub && req.method === 'GET') {
+            if (limited(`pub:${ip(req)}`, 60)) throw new HttpError(429, 'rate_limited', 'Too many requests. Try again in a minute.');
+            ready();
+            return send(res, 200, await publicApi.getLeaderboard({ client, key: pub[1], query: url.searchParams }), { ...cors, 'Cache-Control': 'public, max-age=30' });
         }
 
         // ── everything below needs a session ────────────────────────────────

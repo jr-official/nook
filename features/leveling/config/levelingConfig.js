@@ -34,7 +34,8 @@ module.exports = {
         rewardMode: 'stack',                    // 'stack' | 'replace'
         rewards: [],                            // [{ level, roleId }]
         ignoredChannels: [],
-        ignoredRoles: []
+        ignoredRoles: [],
+        leaderboard: { public: false, slug: null }   // public web leaderboard (opt-in)
     },
 
     PRESETS,
@@ -61,6 +62,8 @@ module.exports = {
 
     CONFIG_CACHE_MS: 60 * 1000,
     LEADERBOARD_PAGE_SIZE: 10,
+    PUBLIC_LEADERBOARD_PAGE_SIZE: 25,
+    PUBLIC_LEADERBOARD_MAX_PAGES: 40,           // top 1000 only
     // Weekly / monthly rows are deleted automatically after this long.
     PERIOD_RETENTION_DAYS: 100
 };

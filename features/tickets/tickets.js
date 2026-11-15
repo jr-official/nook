@@ -2,6 +2,7 @@
 const { setupMessageHandler }     = require('./handlers/messageHandler');
 const { setupInteractionHandler } = require('./handlers/interactionHandler');
 const CacheService                = require('./services/cacheService');
+const reconcileService            = require('./services/reconcileService');
 
 module.exports = function initializeTicketsFeature(client) {
     // FIX: create a shared CacheService instance and register role listeners so
@@ -16,6 +17,7 @@ module.exports = function initializeTicketsFeature(client) {
 
     setupMessageHandler(client);
     setupInteractionHandler(client, cacheService);
+    reconcileService.start(client);
 
     console.log('✅ Tickets feature initialized');
 };

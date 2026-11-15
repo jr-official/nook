@@ -191,6 +191,9 @@ async function handleDeleteTicket(interaction, helpers, services, CONFIG, timeou
             const ticketUserId = findTicketCreatorId(interaction, CONFIG.STAFF_ROLE_NAME);
             if (ticketUserId) {
                 ticketService.removeTicketFromTracking(ticketUserId, interaction.channel.id);
+            } else {
+                // Creator couldn't be worked out: still close the record so it isn't "open" forever.
+                ticketService.closeTicket(interaction.channel.id);
             }
             await interaction.channel.delete();
         } catch (error) {

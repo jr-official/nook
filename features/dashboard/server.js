@@ -114,7 +114,8 @@ function createServer(client) {
             ready();
             const id = oauth.clientId(client);
             const invite = `https://discord.com/oauth2/authorize?client_id=${id}&scope=bot%20applications.commands&permissions=${cfg.INVITE_PERMISSIONS}`;
-            return send(res, 200, { clientId: id, inviteUrl: invite }, cors);
+            const avatarUrl = client.user ? client.user.displayAvatarURL({ size: 256, extension: 'png' }) : null;
+            return send(res, 200, { clientId: id, inviteUrl: invite, avatarUrl }, { ...cors, 'Cache-Control': 'public, max-age=300' });
         }
 
         // ── public leaderboards (opt-in per server, read-only, no login) ─────

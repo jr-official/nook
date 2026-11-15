@@ -8,6 +8,8 @@ const oauth = require('./services/discordOAuth');
 const { requireManager, HttpError } = require('./services/guildAccess');
 const levelingApi = require('./api/levelingApi');
 const publicApi = require('./api/publicApi');
+const moderationApi = require('./api/moderationApi');
+const ticketsApi = require('./api/ticketsApi');
 const { PermissionFlagsBits } = require('discord.js');
 
 const MANAGE_GUILD = PermissionFlagsBits.ManageGuild;
@@ -66,7 +68,9 @@ function createServer(client) {
         ['GET',  /^\/api\/guilds\/(\d+)\/leveling\/leaderboard$/,   levelingApi.getLeaderboard],
         ['GET',  /^\/api\/guilds\/(\d+)\/leveling\/members\/(\d+)$/, levelingApi.getMember],
         ['POST', /^\/api\/guilds\/(\d+)\/leveling\/xp$/,            levelingApi.postXp],
-        ['POST', /^\/api\/guilds\/(\d+)\/leveling\/ladder$/,        levelingApi.postLadder]
+        ['POST', /^\/api\/guilds\/(\d+)\/leveling\/ladder$/,        levelingApi.postLadder],
+        ['GET',  /^\/api\/guilds\/(\d+)\/moderation$/,              moderationApi.getModeration],
+        ['GET',  /^\/api\/guilds\/(\d+)\/tickets$/,                 ticketsApi.getTickets]
     ];
 
     async function handle(req, res) {

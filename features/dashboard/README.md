@@ -46,6 +46,8 @@ Every `/api/guilds/:id/...` call re-checks, live, that the bot is in the server 
 | GET | `/api/guilds/:id/leveling/members/:userId` | one member's XP / level / rank |
 | POST | `/api/guilds/:id/leveling/ladder` | create/match the 11 rank-ladder roles and add them as rewards |
 | POST | `/api/guilds/:id/leveling/xp` | `{userId, mode: add|remove|set|reset, amount}` |
+| GET | `/api/guilds/:id/moderation` | read-only: `{total, warnedMembers, recent[25], top[5]}` of active warnings (no proof links, DM flags or moderator IDs) |
+| GET | `/api/guilds/:id/tickets` | read-only: `{stats:{open,closed,total}, recent[25]}` for this server's tickets |
 
 Limits: 120 requests/min per session, 20 auth attempts/min per IP, 64 KB request bodies, CORS restricted to
 `DASHBOARD_ORIGIN`. Collections: `dashboard_sessions`, `dashboard_oauth_states` (both TTL-indexed).

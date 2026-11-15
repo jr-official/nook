@@ -32,10 +32,22 @@ async function ensureIndexes() {
     await col().createIndex({ 'leaderboard.slug': 1 }, { unique: true, partialFilterExpression: { 'leaderboard.slug': { $type: 'string' } } });
 }
 
+// A server with no settings AND no XP yet is brand new: store the new-server curve for it now so
+// it never changes later. Servers that already have XP keep the original (Classic) curve.
+async function seedNewServer(guildId) {
+    const hasXp = await databaseService.getCollection(cfg.COLLECTIONS.members).countDocuments({ guildId, xp: { $gt: 0 } });
+    if (hasXp) return null;
+    const p = cfg.PRESETS[cfg.NEW_SERVER_PRESET];
+    try { await col().updateOne({ guildId }, { $setOnInsert: { guildId, progression: { a: p.a, b: p.b, c: p.c }, createdAt: new Date() } }, { upsert: true }); }
+    catch (err) { if (err.code !== 11000) throw err; }
+    return col().findOne({ guildId });
+}
+
 async function get(guildId) {
     const hit = cache.get(guildId);
     if (hit && Date.now() - hit.at < cfg.CONFIG_CACHE_MS) return hit.value;
-    const doc = await col().findOne({ guildId });
+    let doc = await col().findOne({ guildId });
+    if (!doc) doc = await seedNewServer(guildId);
     const value = withDefaults({ ...doc, guildId });
     cache.set(guildId, { at: Date.now(), value });
     return value;
@@ -44,6 +56,7 @@ async function get(guildId) {
 // `changes` is a flat object of top-level fields ($set) — e.g. { xpMin: 10, xpMax: 20 }.
 // Arrays (rewards, ignored*) are always replaced whole, which keeps updates simple.
 async function update(guildId, changes) {
+    await get(guildId);   // makes sure a brand-new server is seeded before its first save
     await col().updateOne({ guildId }, { $set: { ...changes, updatedAt: new Date() }, $setOnInsert: { guildId, createdAt: new Date() } }, { upsert: true });
     cache.delete(guildId);
     return get(guildId);

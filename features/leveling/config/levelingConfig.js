@@ -8,6 +8,8 @@
 //                              enabled it with /level-config (default: on)
 
 const PRESETS = {
+    linear:  { label: 'Linear (steady)', a: 0, b: 100, c: 75 },          // every level costs 100 XP more than the last
+    flat:    { label: 'Flat (1,000 per level)', a: 0, b: 0, c: 1000 },
     classic: { label: 'Classic (balanced)', a: 5, b: 50, c: 100 },
     easy:    { label: 'Easy (faster levels)', a: 2, b: 30, c: 60 },
     hard:    { label: 'Hard (slower levels)', a: 8, b: 80, c: 150 }
@@ -23,7 +25,7 @@ module.exports = {
     DEFAULTS: {
         enabled: process.env.LEVELING_DEFAULT_ENABLED !== 'false',
         xpMin: 15,
-        xpMax: 25,
+        xpMax: 40,                              // 15-40 XP per message
         cooldownSec: 60,
         progression: { a: 5, b: 50, c: 100 },   // XP to go from level n to n+1 = a*n² + b*n + c
         announce: {
@@ -39,6 +41,8 @@ module.exports = {
     },
 
     PRESETS,
+    // Servers that have never used leveling start on this curve (existing servers keep theirs).
+    NEW_SERVER_PRESET: 'linear',
 
     LIMITS: {
         MAX_LEVEL: 1000,

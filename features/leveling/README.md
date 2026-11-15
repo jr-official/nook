@@ -18,14 +18,14 @@ all-time / weekly / monthly leaderboards. Everything is configured per server wi
 
 ## How XP works
 
-* A normal text message earns a random **15–25 XP**, at most once per **60 s** per member per server
+* A normal text message earns a random **15–40 XP**, at most once per **60 s** per member per server
   (both configurable). Applies to text channels, announcement channels, threads and voice-channel chat.
 * No XP for: bots, webhooks, DMs, empty or attachment-only messages, system messages, messages that
   start with `!` (bot commands), edits, ignored channels/roles, or leveling disabled.
 * Anti-spam: text must have ≥3 characters after removing links/mentions/custom emoji and ≥3 distinct
   characters; repeating one of your last 5 messages (10-minute window) earns nothing.
 * Level maths: XP needed to go from level *n* to *n+1* is `a·n² + b·n + c` (default `5n² + 50n + 100`).
-  Levels are always derived from total XP. Presets: Classic, Easy, Hard, or custom `a`, `b`, `c`.
+  Levels are always derived from total XP. Presets: Linear (steady, the default for new servers), Flat, Classic, Easy, Hard, or custom `a`, `b`, `c`. Servers that already had XP keep the Classic curve until an admin changes it.
 
 ## /level-config sections
 

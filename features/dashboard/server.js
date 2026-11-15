@@ -70,7 +70,10 @@ function createServer(client) {
         ['POST', /^\/api\/guilds\/(\d+)\/leveling\/xp$/,            levelingApi.postXp],
         ['POST', /^\/api\/guilds\/(\d+)\/leveling\/ladder$/,        levelingApi.postLadder],
         ['GET',  /^\/api\/guilds\/(\d+)\/moderation$/,              moderationApi.getModeration],
-        ['GET',  /^\/api\/guilds\/(\d+)\/tickets$/,                 ticketsApi.getTickets]
+        ['GET',  /^\/api\/guilds\/(\d+)\/moderation\/warnings$/,     moderationApi.listWarnings],
+        ['DELETE', /^\/api\/guilds\/(\d+)\/moderation\/warnings\/([A-Za-z0-9-]{1,32})$/, moderationApi.removeWarning],
+        ['GET',  /^\/api\/guilds\/(\d+)\/tickets$/,                 ticketsApi.getTickets],
+        ['GET',  /^\/api\/guilds\/(\d+)\/tickets\/list$/,            ticketsApi.listTickets]
     ];
 
     async function handle(req, res) {
@@ -150,7 +153,7 @@ function createServer(client) {
             ready();
             const guild = await requireManager(client, session, m[1]);
             const body = method === 'PUT' || method === 'POST' ? await readJson(req) : undefined;
-            const result = await fn({ client, session, guild, body, query: url.searchParams, params: { userId: m[2] } });
+            const result = await fn({ client, session, guild, body, query: url.searchParams, params: { userId: m[2], caseId: m[2] } });
             return send(res, 200, result, cors);
         }
         throw new HttpError(404, 'not_found', 'No such endpoint.');

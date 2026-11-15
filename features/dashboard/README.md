@@ -46,8 +46,13 @@ Every `/api/guilds/:id/...` call re-checks, live, that the bot is in the server 
 | GET | `/api/guilds/:id/leveling/members/:userId` | one member's XP / level / rank |
 | POST | `/api/guilds/:id/leveling/ladder` | create/match the 11 rank-ladder roles and add them as rewards |
 | POST | `/api/guilds/:id/leveling/xp` | `{userId, mode: add|remove|set|reset, amount}` |
-| GET | `/api/guilds/:id/moderation` | read-only: `{total, warnedMembers, recent[25], top[5]}` of active warnings (no proof links, DM flags or moderator IDs) |
-| GET | `/api/guilds/:id/tickets` | read-only: `{stats:{open,closed,total}, recent[25]}` for this server's tickets |
+| GET | `/api/guilds/:id/moderation` | `{total, warnedMembers, byDay[14], recent[25], top[5]}` of active warnings. `byDay` is the last 14 UTC days, oldest first, zeros filled. No proof links, DM flags or moderator IDs |
+| GET | `/api/guilds/:id/moderation/warnings?page=1&q=&userId=` | `{total, page, pageSize:20, rows[]}`, newest first. `q` matches a case id exactly (any case), reason text, or the stored member tag (max 60 chars, always literal). `userId` filters one member. `page` 1 to 500, anything else is `400` |
+| DELETE | `/api/guilds/:id/moderation/warnings/:caseId` | removes (soft-deletes) one active warning in this server: `{ok, caseId, total}`. `404` if it doesn't exist here, even when the case id exists in another server. The remover's Discord id is stored as `removedBy` and logged |
+| GET | `/api/guilds/:id/tickets` | `{stats:{open,closed,total}, byType[{type,count}], types[], recent[25]}` for this server's tickets |
+| GET | `/api/guilds/:id/tickets/list?status=open\|closed\|all&type=&page=1&q=` | `{total, page, pageSize:20, rows[]}` newest first; rows have `channelId, type, userId, username, status, createdAt, closedAt, channelName` (`channelName` is null once the channel is gone). `q` matches a channel id, member id, member tag or ticket type |
+
+Tickets can't be closed from the dashboard: the in-Discord close flow is tied to the Discord interaction (staff check, confirmation message, permission changes), so it isn't safe to call from the API.
 
 Limits: 120 requests/min per session, 20 auth attempts/min per IP, 64 KB request bodies, CORS restricted to
 `DASHBOARD_ORIGIN`. Collections: `dashboard_sessions`, `dashboard_oauth_states` (both TTL-indexed).

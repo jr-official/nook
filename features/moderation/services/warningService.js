@@ -66,6 +66,18 @@ class WarningService {
         return warning;
     }
 
+    // Guild-scoped removal by case id (used by the dashboard). Same soft-delete as removeWarningById,
+    // but the case id must belong to this guild, so one server can never remove another's case.
+    async removeByCaseId(guildId, caseId, removedBy = null) {
+        const warning = await this._col().findOne({ guildId, caseId, active: true });
+        if (!warning) return null;
+        const res = await this._col().updateOne(
+            { _id: warning._id, guildId, active: true },
+            { $set: { active: false, removedAt: new Date(), ...(removedBy ? { removedBy } : {}) } }
+        );
+        return res.modifiedCount === 0 ? null : warning;
+    }
+
     async getUserWarnings(guildId, userId) {
         return await this._col().find({ guildId, userId, active: true }).sort({ createdAt: -1 }).toArray();
     }

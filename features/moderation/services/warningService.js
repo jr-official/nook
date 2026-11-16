@@ -2,6 +2,12 @@
 const { ObjectId } = require('mongodb');
 const databaseService = require('../../tickets/services/databaseService');
 const { generateCaseId } = require('../utils/caseID');
+const { WARN_DECAY_DAYS } = require('../config/moderationConfig');
+
+const clampSeverity = v => { const n = Math.trunc(Number(v)); return Number.isFinite(n) ? Math.min(3, Math.max(0, n)) : 0; };
+// Points a warning counts for right now (0 once it has decayed).
+const pointsOf = (w, now = Date.now(), decayDays = WARN_DECAY_DAYS) =>
+    decayDays > 0 && now - new Date(w.createdAt).getTime() > decayDays * 86400000 ? 0 : clampSeverity(w.severity);
 
 class WarningService {
     constructor() { this.collection = 'warnings'; }
@@ -10,7 +16,7 @@ class WarningService {
 
     // FIX (Bug 5): addWarning catches MongoDB duplicate key errors (code 11000)
     // on the caseId unique index and retries once with a freshly generated ID.
-    async addWarning(guildId, targetUser, moderatorUser, reason, proof, dmSent) {
+    async addWarning(guildId, targetUser, moderatorUser, reason, proof, dmSent, severity = 0) {
         const buildDoc = (caseId) => ({
             caseId,
             guildId,
@@ -19,6 +25,7 @@ class WarningService {
             moderatorId:  moderatorUser.id,
             moderatorTag: moderatorUser.tag,
             reason,
+            severity: clampSeverity(severity),
             proof:    proof || null,
             dmSent:   dmSent ?? false,
             createdAt: new Date(),
@@ -86,19 +93,23 @@ class WarningService {
         return await this._col().countDocuments({ guildId, userId, active: true });
     }
 
-    // FIX: added a $sort stage before $group so that $last always picks the
-    // most recently created document's username. Without the sort, MongoDB
-    // processes documents in storage order (undefined), meaning a user who
-    // changed their Discord username could show their old name in the
-    // leaderboard indefinitely.
+    // Weighted points for one member (active warnings only, decay applied).
+    async getUserPoints(guildId, userId) {
+        const docs = await this._col().find({ guildId, userId, active: true }).toArray();
+        return docs.reduce((a, w) => a + pointsOf(w), 0);
+    }
+
+    // Members with active warnings, most weighted points first, then most warnings.
+    // Done in JS (not an aggregate) because decay is a per-warning date test; one server stays small.
     async getGuildLeaderboard(guildId) {
-        return await this._col().aggregate([
-            { $match: { guildId, active: true } },
-            { $sort: { createdAt: 1 } },
-            { $group: { _id: '$userId', username: { $last: '$username' }, count: { $sum: 1 } } },
-            { $sort: { count: -1, _id: 1 } },
-            { $project: { _id: 0, userId: '$_id', username: '$username', count: '$count' } }
-        ]).toArray();
+        const docs = await this._col().find({ guildId, active: true }).sort({ createdAt: 1 }).limit(20000).toArray();
+        const by = new Map();
+        for (const w of docs) {
+            const e = by.get(w.userId) ?? { userId: w.userId, username: w.username, count: 0, points: 0 };
+            e.username = w.username; e.count++; e.points += pointsOf(w);
+            by.set(w.userId, e);
+        }
+        return [...by.values()].sort((a, b) => b.points - a.points || b.count - a.count || (a.userId < b.userId ? -1 : 1));
     }
 
     async ensureIndexes() {
@@ -119,4 +130,7 @@ class WarningService {
     }
 }
 
-module.exports = new WarningService();
+const service = new WarningService();
+service.pointsOf = pointsOf;
+service.clampSeverity = clampSeverity;
+module.exports = service;

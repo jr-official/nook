@@ -43,7 +43,7 @@ async function getModeration({ guild }) {
             reason: trim(d.reason, 300),
             createdAt: new Date(d.createdAt).toISOString()
         })),
-        top: top.map(t => ({ userId: t.userId, username: names.get(t.userId) ?? t.username ?? null, count: t.count }))
+        top: top.map(t => ({ userId: t.userId, username: names.get(t.userId) ?? t.username ?? null, count: t.count, points: t.points }))
     };
 }
 
@@ -53,6 +53,7 @@ const row = (d, names) => ({
     username: names.get(d.userId) ?? d.username ?? null,
     moderator: d.moderatorTag ?? null,
     reason: trim(d.reason, 300),
+    severity: warningService.clampSeverity(d.severity),
     createdAt: iso(d.createdAt)
 });
 

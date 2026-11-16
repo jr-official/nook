@@ -21,6 +21,7 @@ function buildDoc(guildId, a, caseId) {
         duration: a.duration ?? null,
         expiresAt: a.expiresAt instanceof Date ? a.expiresAt : null,
         dmSent: a.dmSent ?? null,
+        severity: a.type === 'warn' ? (Number.isInteger(a.severity) ? a.severity : 0) : null,
         relatedCaseId: a.removedCaseId ?? null,
         createdAt: new Date(),
         active: a.type in LIFTABLE

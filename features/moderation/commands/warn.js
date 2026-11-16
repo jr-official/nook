@@ -9,6 +9,7 @@ const {
     parseMembers, handleProofData, formatProofDisplay
 } = require('../utils/moderationUtils');
 const { generateCaseId } = require('../utils/caseID');
+const { WARN_POINT_THRESHOLD } = require('../config/moderationConfig');
 const warningService = require('../services/warningService');
 
 const REMOVE_PAGE_SIZE = 3;
@@ -26,6 +27,7 @@ module.exports = {
                 .setDescription('Issue a warning to one or multiple members')
                 .addStringOption(opt  => opt.setName('user').setDescription('User(s) to warn').setRequired(true))
                 .addStringOption(opt  => opt.setName('reason').setDescription('Reason for the warning').setRequired(true))
+                .addIntegerOption(opt => opt.setName('severity').setDescription('Weight 0-3 (default 0). Points add up; staff are alerted at the threshold').setMinValue(0).setMaxValue(3).setRequired(false))
                 .addBooleanOption(opt => opt.setName('dm').setDescription('Send DM to user (default: true)').setRequired(false))
                 .addStringOption(opt  => opt.setName('proof_url').setDescription('Evidence/proof URL').setRequired(false))
                 .addAttachmentOption(opt => opt.setName('proof_file').setDescription('Upload proof file').setRequired(false))
@@ -42,6 +44,7 @@ module.exports = {
         if (sub === 'add') {
             await this.executeWarnAdd(interaction, {
                 users:      interaction.options.getString('user'),
+                severity:   interaction.options.getInteger('severity') ?? 0,
                 reason:     interaction.options.getString('reason'),
                 dm:         interaction.options.getBoolean('dm') !== false,
                 proof_url:  interaction.options.getString('proof_url'),
@@ -58,7 +61,7 @@ module.exports = {
                 '❌ **Usage:**\n' +
                 '`!warn <user> <reason> [options]` — Issue a warning\n' +
                 '`!warn remove <user>` — Open removal picker\n' +
-                '**Options:** `--no-dm`, `--proof=<url>`'
+                '**Options:** `--no-dm`, `--severity=0-3`, `--proof=<url>`'
             );
         }
 
@@ -77,11 +80,16 @@ module.exports = {
 
         if (args.length < 2) return message.reply('❌ You must provide a user and a reason.');
 
-        const options = { users: args[0], reason: '', dm: true, proof_url: null, proof_file: null };
+        const options = { users: args[0], reason: '', dm: true, severity: 0, proof_url: null, proof_file: null };
         const reasonParts = [];
         for (let i = 1; i < args.length; i++) {
             if (args[i] === '--no-dm') options.dm = false;
             else if (args[i].startsWith('--proof=')) options.proof_url = args[i].split('=')[1];
+            else if (/^--sev(erity)?=/.test(args[i])) {
+                const n = Number(args[i].split('=')[1]);
+                if (!Number.isInteger(n) || n < 0 || n > 3) return message.reply('❌ Severity must be a whole number from 0 to 3.');
+                options.severity = n;
+            }
             else reasonParts.push(args[i]);
         }
         options.reason = reasonParts.join(' ');
@@ -131,9 +139,13 @@ module.exports = {
                     continue;
                 }
 
-                const warning       = await warningService.addWarning(guild.id, target.user, moderatorUser, options.reason, proofData.data, false);
+                const severity      = warningService.clampSeverity(options.severity);
+                const pointsBefore  = await warningService.getUserPoints(guild.id, target.user.id);
+                const warning       = await warningService.addWarning(guild.id, target.user, moderatorUser, options.reason, proofData.data, false, severity);
                 const caseId        = warning.caseId;
                 const totalWarnings = await warningService.getUserWarningCount(guild.id, target.user.id);
+                const points        = pointsBefore + severity;
+                const crossed       = WARN_POINT_THRESHOLD > 0 && pointsBefore < WARN_POINT_THRESHOLD && points >= WARN_POINT_THRESHOLD;
 
                 let dmSent = false;
                 if (options.dm) {
@@ -161,11 +173,12 @@ module.exports = {
                     console.error(`[warn] Failed to persist dmSent=${dmSent} for warning ${warning._id}:`, dbErr);
                 }
 
-                results.successful.push({ user: target.user, caseId, totalWarnings, dmSent });
+                results.successful.push({ user: target.user, caseId, totalWarnings, dmSent, severity, points, crossed });
 
                 await logModeration(guild, {
                     type: 'warn', caseId, target: target.user, moderator: moderatorUser,
-                    reason: options.reason, proof: proofData.data, totalWarnings, dmSent
+                    reason: options.reason, proof: proofData.data, totalWarnings, dmSent,
+                    severity, points, threshold: WARN_POINT_THRESHOLD, thresholdCrossed: crossed
                 });
             } catch (error) {
                 console.error(`Failed to warn ${target.user?.tag}:`, error);
@@ -182,7 +195,7 @@ module.exports = {
                 name: `Warned (${results.successful.length})`,
                 inline: false,
                 value: results.successful.map(r =>
-                    `✅ **${r.user.tag}** (${r.user.id})\n   └ Case ID: \`${r.caseId}\` | Total: **${r.totalWarnings}** | DM: ${r.dmSent ? '✅' : '❌'}`
+                    `✅ **${r.user.tag}** (${r.user.id})\n   └ Case ID: \`${r.caseId}\` | Total: **${r.totalWarnings}** | Points: **${r.points}** (+${r.severity})${r.crossed ? ' 🚨 threshold reached' : ''} | DM: ${r.dmSent ? '✅' : '❌'}`
                 ).join('\n')
             });
         }

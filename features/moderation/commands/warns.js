@@ -147,7 +147,7 @@ function buildLeaderboardEmbed(guildName, leaderboard, page) {
     embed.setDescription(slice.map((entry, i) => {
         const rank  = start + i + 1;
         const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `**${rank}.**`;
-        return `${medal} <@${entry.userId}> (${entry.userId}) — **${entry.count}** ${entry.count === 1 ? 'warning' : 'warnings'}`;
+        return `${medal} <@${entry.userId}> (${entry.userId}) — **${entry.points}** pt${entry.points === 1 ? '' : 's'} · ${entry.count} ${entry.count === 1 ? 'warning' : 'warnings'}`;
     }).join('\n'));
 
     return embed;
@@ -170,12 +170,13 @@ function buildUserWarningsEmbed(targetUser, warnings, page) {
         return embed;
     }
 
-    embed.setDescription(`**${targetUser.tag}** (${targetUser.id}) has **${warnings.length}** active warning${warnings.length !== 1 ? 's' : ''}.`);
+    embed.setDescription(`**${targetUser.tag}** (${targetUser.id}) has **${warnings.length}** active warning${warnings.length !== 1 ? 's' : ''} worth **${warnings.reduce((a, w) => a + warningService.pointsOf(w), 0)}** point${warnings.reduce((a, w) => a + warningService.pointsOf(w), 0) === 1 ? '' : 's'}.`);
 
     for (const [i, w] of slice.entries()) {
         const ts    = Math.floor(new Date(w.createdAt).getTime() / 1000);
         const lines = [
             `**Reason:** ${w.reason}`,
+            `**Severity:** ${warningService.clampSeverity(w.severity)}`,
             `**Moderator:** <@${w.moderatorId}> (${w.moderatorId})`,
             `**Issued:** <t:${ts}:F> (<t:${ts}:R>)`,
             `**DM sent:** ${w.dmSent ? '✅ Yes' : '❌ No'}`

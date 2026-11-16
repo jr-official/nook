@@ -353,6 +353,8 @@ async function logModeration(guild, action) {
                     { name: 'Moderator',      value: modValue,                           inline: true  },
                     { name: 'Reason',         value: action.reason,                      inline: false },
                     { name: 'Total Warnings', value: `${action.totalWarnings}`,          inline: true  },
+                    { name: 'Severity',       value: `${action.severity ?? 0}`,          inline: true  },
+                    { name: 'Points',         value: `${action.points ?? 0}`,            inline: true  },
                     { name: 'DM Sent',        value: action.dmSent ? '✅ Yes' : '❌ No', inline: true  }
                 );
                 if (action.proof) { embed.addFields({ name: 'Evidence', value: formatProofForLog(action.proof), inline: false }); if (action.proof.type === 'file' && action.proof.isImage) embed.setThumbnail(action.proof.url); }
@@ -378,6 +380,11 @@ async function logModeration(guild, action) {
         }
 
         await logChannel.send({ embeds: [embed] });
+        if (action.type === 'warn' && action.thresholdCrossed) {
+            await logChannel.send({ embeds: [new EmbedBuilder().setColor('#ff3b30').setTitle('🚨 Warning threshold reached')
+                .setDescription(`${targetValue} now has **${action.points}** warning points (threshold ${action.threshold}). Latest: \`${caseId}\` — ${action.reason}\n\nConsider a mute, kick or ban. History: \`/case history\`.`)
+                .setTimestamp()] });
+        }
     } catch (error) {
         console.error('Failed to log moderation action:', error);
     }

@@ -50,6 +50,10 @@ const get = (guildId, caseId) => col().findOne({ guildId, caseId: String(caseId)
 const forUser = (guildId, userId, limit = 50) =>
     col().find({ guildId, userId }).sort({ createdAt: -1 }).limit(limit).toArray();
 
+// A case of this type for this member created in the last `sinceMs`.
+const recent = (guildId, userId, type, sinceMs) =>
+    col().findOne({ guildId, userId, type, createdAt: { $gte: new Date(Date.now() - sinceMs) } });
+
 // Temp bans whose time is up and that have not been lifted yet.
 const dueBans = (now = new Date(), limit = 50) =>
     col().find({ type: 'ban', active: true, expiresAt: { $lte: now } }).limit(limit).toArray();
@@ -87,4 +91,4 @@ async function ensureIndexes() {
     } catch (e) { console.error('❌ Error creating case indexes:', e); }
 }
 
-module.exports = { _col: col, record, get, forUser, dueBans, markExpired, backfillWarnings, ensureIndexes, TYPES };
+module.exports = { _col: col, recent, record, get, forUser, dueBans, markExpired, backfillWarnings, ensureIndexes, TYPES };

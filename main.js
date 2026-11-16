@@ -9,6 +9,7 @@ const rolesFeature     = require('./features/roles/roles');
 const mediaFeature     = require('./features/media/media');
 const levelingFeature  = require('./features/leveling/leveling');
 const dashboardFeature = require('./features/dashboard/dashboard');
+const loggingFeature   = require('./features/logging/logging');
 
 const client = new Client({
     intents: [
@@ -19,7 +20,9 @@ const client = new Client({
         GatewayIntentBits.GuildBans,
         GatewayIntentBits.DirectMessages   // media library: prefix commands in DMs
     ],
-    partials: [Partials.Channel]           // required to receive DM messages
+    partials: [Partials.Channel,           // required to receive DM messages
+               Partials.Message,           // message logs: deletes/edits of messages from before the bot started
+               Partials.GuildMember]       // member logs: leaves/updates of uncached members
 });
 
 async function initializeBot() {
@@ -33,6 +36,7 @@ async function initializeBot() {
         levelingFeature(client);
         moderationFeature(client);
         rolesFeature(client);
+        loggingFeature(client);
         dashboardFeature(client);   // web API for the Nook website (disabled unless configured)
 
         console.log('🤖 Bot features initialized');

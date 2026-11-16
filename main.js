@@ -18,6 +18,8 @@ const client = new Client({
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildBans,
+        GatewayIntentBits.GuildVoiceStates,          // voice logs
+        GatewayIntentBits.GuildEmojisAndStickers,    // emoji logs
         GatewayIntentBits.DirectMessages   // media library: prefix commands in DMs
     ],
     partials: [Partials.Channel,           // required to receive DM messages

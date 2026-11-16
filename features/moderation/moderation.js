@@ -19,6 +19,7 @@ const warningService = require('./services/warningService');
 const caseService    = require('./services/caseService');
 const expiryService  = require('./services/expiryService');
 const caseCommand    = require('./commands/case');
+const { purgeCmd, purgeUntilCmd } = require('./commands/purge');
 
 const PREFIX = '!';
 
@@ -80,6 +81,8 @@ module.exports = (client) => {
     client.moderationCommands.set('warn',   warnCommand);
     client.moderationCommands.set('warns',  warnsCommand);
     client.moderationCommands.set('case',   caseCommand);
+    client.moderationCommands.set('purge',  purgeCmd);
+    client.moderationCommands.set('purgeuntil', purgeUntilCmd);
 
     client.once(Events.ClientReady, async () => {
         try {

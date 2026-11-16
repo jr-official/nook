@@ -346,6 +346,15 @@ async function logModeration(guild, action) {
                 if (action.proof) { embed.addFields({ name: 'Evidence', value: formatProofForLog(action.proof), inline: false }); if (action.proof.type === 'file' && action.proof.isImage) embed.setThumbnail(action.proof.url); }
                 break;
 
+            case 'purge':
+                embed.setColor('#8e8e93').setTitle('🧹 Messages Purged').addFields(
+                    { name: 'Channel',   value: `<#${action.target.id}>`,   inline: true  },
+                    { name: 'Deleted',   value: `${action.count ?? 0}`,     inline: true  },
+                    { name: 'Moderator', value: modValue,                   inline: true  },
+                    { name: 'Details',   value: action.reason,              inline: false }
+                );
+                break;
+
             case 'warn':
                 embed.setColor('#ffcc00').setTitle('⚠️ Member Warned').addFields(
                     { name: 'Case ID',        value: caseId,                             inline: true  },

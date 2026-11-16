@@ -9,7 +9,9 @@ const COMMAND_PERMISSIONS = {
     unmute: { flag: PermissionFlagsBits.ModerateMembers, label: 'moderate members (timeout)' },
     warn:   { flag: PermissionFlagsBits.ModerateMembers, label: 'moderate members' },
     warns:  { flag: PermissionFlagsBits.ModerateMembers, label: 'moderate members' },
-    case:   { flag: PermissionFlagsBits.ModerateMembers, label: 'moderate members' }
+    case:   { flag: PermissionFlagsBits.ModerateMembers, label: 'moderate members' },
+    purge:      { flag: PermissionFlagsBits.ManageMessages, label: 'manage messages' },
+    purgeuntil: { flag: PermissionFlagsBits.ManageMessages, label: 'manage messages' }
 };
 
 module.exports = {

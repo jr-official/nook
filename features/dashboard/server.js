@@ -71,6 +71,7 @@ function createServer(client) {
         ['POST', /^\/api\/guilds\/(\d+)\/leveling\/ladder$/,        levelingApi.postLadder],
         ['GET',  /^\/api\/guilds\/(\d+)\/moderation$/,              moderationApi.getModeration],
         ['GET',  /^\/api\/guilds\/(\d+)\/moderation\/warnings$/,     moderationApi.listWarnings],
+        ['GET',  /^\/api\/guilds\/(\d+)\/moderation\/cases$/,        moderationApi.listCases],
         ['DELETE', /^\/api\/guilds\/(\d+)\/moderation\/warnings\/([A-Za-z0-9-]{1,32})$/, moderationApi.removeWarning],
         ['GET',  /^\/api\/guilds\/(\d+)\/tickets$/,                 ticketsApi.getTickets],
         ['GET',  /^\/api\/guilds\/(\d+)\/tickets\/list$/,            ticketsApi.listTickets]

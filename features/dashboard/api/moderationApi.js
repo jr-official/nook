@@ -1,6 +1,7 @@
 // features/dashboard/api/moderationApi.js
 // Read-only overview of a server's warnings. No DM-sent flags, proof links or moderator IDs are returned.
 const warningService = require('../../moderation/services/warningService');
+const caseService = require('../../moderation/services/caseService');
 const { HttpError } = require('../services/guildAccess');
 const { PAGE_SIZE, escapeRegex, parsePage, parseQ, parseSnowflake, iso, namesFor } = require('./_listing');
 
@@ -90,4 +91,43 @@ async function removeWarning({ guild, session, params }) {
     return { ok: true, caseId, total };
 }
 
-module.exports = { getModeration, listWarnings, removeWarning };
+// GET /moderation/cases?type=&page=&q=&userId=  (every action in the moderation database)
+async function listCases({ guild, query }) {
+    const page = parsePage(query.get('page'));
+    const q = parseQ(query.get('q'));
+    const userId = parseSnowflake(query.get('userId'), 'userId');
+    const type = query.get('type');
+    if (type && type !== 'all' && !caseService.TYPES.includes(type)) throw new HttpError(400, 'invalid', 'Unknown case type.');
+    const filter = { guildId: guild.id };
+    if (type && type !== 'all') filter.type = type;
+    if (userId) filter.userId = userId;
+    if (q) {
+        const part = escapeRegex(q);
+        filter.$or = [
+            { caseId: { $regex: `^${part}$`, $options: 'i' } },
+            { reason: { $regex: part, $options: 'i' } },
+            { username: { $regex: part, $options: 'i' } }
+        ];
+    }
+    const col = caseService._col();
+    const [total, docs] = await Promise.all([
+        col.countDocuments(filter),
+        col.find(filter).sort({ createdAt: -1 }).skip((page - 1) * PAGE_SIZE).limit(PAGE_SIZE).toArray()
+    ]);
+    const names = await namesFor(guild, [...new Set(docs.map(d => d.userId).filter(Boolean))]);
+    return {
+        total, page, pageSize: PAGE_SIZE,
+        rows: docs.map(d => ({
+            caseId: d.caseId, type: d.type, userId: d.userId,
+            username: names.get(d.userId) ?? d.username ?? null,
+            moderator: d.moderatorTag ?? null,
+            reason: trim(d.reason, 300),
+            duration: d.duration ?? null,
+            active: !!d.active,
+            expiresAt: d.expiresAt ? iso(d.expiresAt) : null,
+            createdAt: iso(d.createdAt)
+        }))
+    };
+}
+
+module.exports = { getModeration, listWarnings, listCases, removeWarning };

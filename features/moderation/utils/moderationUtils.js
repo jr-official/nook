@@ -1,5 +1,6 @@
 // features/moderation/utils/moderationUtils.js
 const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
+const caseService = require('../services/caseService');
 const { generateCaseId } = require('./caseID');
 const { MOD_LOGS_CHANNEL_ID } = require('../config/moderationConfig');
 
@@ -248,6 +249,10 @@ async function sendDM(user, options) {
 // ─── logModeration ───────────────────────────────────────────────────────────
 async function logModeration(guild, action) {
     const caseId = action.caseId || generateCaseId(action.type);
+
+    // Record in the moderation database first: it must not depend on a log channel being set up.
+    try { await caseService.record(guild.id, action, caseId); }
+    catch (e) { console.error('[logModeration] could not record case', caseId, e); }
 
     try {
         // FIX: warn loudly when MOD_LOGS_CHANNEL_ID is not configured rather

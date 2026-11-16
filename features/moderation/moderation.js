@@ -16,6 +16,9 @@ const warnsCommand  = require('./commands/warns');
 const { handleWarnsButton }      = require('./commands/warns');
 const { handleWarnRemoveButton } = require('./commands/warn');
 const warningService = require('./services/warningService');
+const caseService    = require('./services/caseService');
+const expiryService  = require('./services/expiryService');
+const caseCommand    = require('./commands/case');
 
 const PREFIX = '!';
 
@@ -76,6 +79,7 @@ module.exports = (client) => {
     client.moderationCommands.set('unmute', unmuteCommand);
     client.moderationCommands.set('warn',   warnCommand);
     client.moderationCommands.set('warns',  warnsCommand);
+    client.moderationCommands.set('case',   caseCommand);
 
     client.once(Events.ClientReady, async () => {
         try {
@@ -95,6 +99,12 @@ module.exports = (client) => {
             for (const extra of client.extraSlashCommands ?? []) commands.push(extra.toJSON());
             await registerCommandsIfChanged(client, commands);
             await warningService.ensureIndexes();
+            await caseService.ensureIndexes();
+            try {
+                const n = await caseService.backfillWarnings(warningService._col());
+                if (n) console.log(`✅ Backfilled ${n} warning case(s) into the moderation database`);
+            } catch (e) { console.error('❌ Case backfill failed:', e); }
+            expiryService.start(client);
         } catch (error) {
             console.error('❌ Failed to register moderation slash commands:', error);
         }

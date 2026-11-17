@@ -35,7 +35,7 @@ function logChannel(guild, kind) {
         const ch = direct(guild, k);
         if (ch) return ch;
     }
-    if (!warned.has(kind)) { warned.add(kind); console.warn(`[logging] No channel for ${kind} logs. Set ${KINDS[kind].env} in Railway.`); }
+    if (!warned.has(kind)) { warned.add(kind); console.warn(`[logging] No channel for ${kind} logs. Pick one on the dashboard Logging page.`); }
     return null;
 }
 

@@ -255,26 +255,9 @@ async function logModeration(guild, action) {
     catch (e) { console.error('[logModeration] could not record case', caseId, e); }
 
     try {
-        // FIX: warn loudly when MOD_LOGS_CHANNEL_ID is not configured rather
-        // than silently falling through. The hard-coded fallback ID in
-        // moderationConfig.js only works in one specific server; every other
-        // deployment needs this set in .env.
-        if (!MOD_LOGS_CHANNEL_ID) {
-            console.warn('[logModeration] MOD_LOGS_CHANNEL_ID is not set. Skipping log.');
-            return caseId;
-        }
-
-        let logChannel = guild.channels.cache.get(MOD_LOGS_CHANNEL_ID);
-        if (!logChannel) {
-            logChannel = guild.channels.cache.find(ch =>
-                ch.name.includes('mod-log') || ch.name.includes('modlog') ||
-                ch.name.includes('audit-log') || ch.name.includes('logs')
-            );
-        }
-        if (!logChannel || !logChannel.isTextBased()) {
-            console.warn('[logModeration] No usable mod-logs channel found. Set MOD_LOGS_CHANNEL_ID in .env.');
-            return caseId;
-        }
+        // Dashboard choice > MOD_LOGS_CHANNEL_ID > a channel named like "mod-logs" (see features/logging/config.js).
+        const logChannel = require('../../logging/config').logChannel(guild, 'mod');
+        if (!logChannel) return caseId;
 
         const embed = new EmbedBuilder().setTimestamp().setFooter({ text: `Case ID: ${caseId}` });
         const modValue    = `${action.moderator.tag} (${action.moderator.id})`;

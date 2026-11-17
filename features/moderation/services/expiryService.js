@@ -4,6 +4,7 @@
 const caseService = require('./caseService');
 const { generateCaseId } = require('../utils/caseID');
 const { logModeration } = require('../utils/moderationUtils');
+const lockService = require('./lockService');
 
 const TICK_MS = 60 * 1000;
 let running = false;
@@ -29,6 +30,16 @@ async function tick(client) {
                 target: { id: c.userId, tag: c.username }, moderator: { id: client.user.id, tag: client.user.tag }
             });
             lifted++;
+        }
+        // Timed channel locks.
+        for (const l of await lockService.due()) {
+            const guild = client.guilds.cache.get(l.guildId);
+            if (!guild?.available) continue;
+            const ch = guild.channels.cache.get(l.channelId);
+            if (!ch) { await lockService.forget(l.guildId, l.channelId); continue; }
+            const { doUnlock } = require('../commands/lock');
+            const r = await doUnlock(ch, client.user);
+            if (!r.ok) console.error(`[expiry] unlock ${l.channelId} failed:`, r.text);
         }
     } catch (e) {
         console.error('[expiry] tick failed:', e);

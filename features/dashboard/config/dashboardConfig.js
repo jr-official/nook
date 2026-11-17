@@ -23,7 +23,7 @@ const origins = String(process.env.DASHBOARD_ORIGIN || '')
 
 const DEFAULT_INVITE_PERMISSIONS = String(
     P.ViewChannel | P.SendMessages | P.EmbedLinks | P.AttachFiles | P.ReadMessageHistory | P.AddReactions |
-    P.ManageRoles | P.ManageChannels | P.ManageMessages | P.KickMembers | P.BanMembers | P.ModerateMembers
+    P.ManageRoles | P.ManageChannels | P.ManageMessages | P.KickMembers | P.BanMembers | P.ModerateMembers | P.ViewAuditLog
 );
 
 module.exports = {

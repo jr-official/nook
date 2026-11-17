@@ -20,6 +20,9 @@ const caseService    = require('./services/caseService');
 const expiryService  = require('./services/expiryService');
 const caseCommand    = require('./commands/case');
 const { purgeCmd, purgeUntilCmd } = require('./commands/purge');
+const { lockCmd, unlockCmd, lockdownCmd, unlockdownCmd } = require('./commands/lock');
+const lockService = require('./services/lockService');
+const modSettings = require('./services/modSettingsService');
 
 const PREFIX = '!';
 
@@ -83,6 +86,10 @@ module.exports = (client) => {
     client.moderationCommands.set('case',   caseCommand);
     client.moderationCommands.set('purge',  purgeCmd);
     client.moderationCommands.set('purgeuntil', purgeUntilCmd);
+    client.moderationCommands.set('lock', lockCmd);
+    client.moderationCommands.set('unlock', unlockCmd);
+    client.moderationCommands.set('lockdown', lockdownCmd);
+    client.moderationCommands.set('unlockdown', unlockdownCmd);
 
     client.once(Events.ClientReady, async () => {
         try {
@@ -103,6 +110,8 @@ module.exports = (client) => {
             await registerCommandsIfChanged(client, commands);
             await warningService.ensureIndexes();
             await caseService.ensureIndexes();
+            await lockService.ensureIndexes();
+            await modSettings.load();
             try {
                 const n = await caseService.backfillWarnings(warningService._col());
                 if (n) console.log(`✅ Backfilled ${n} warning case(s) into the moderation database`);
@@ -112,6 +121,8 @@ module.exports = (client) => {
             console.error('❌ Failed to register moderation slash commands:', error);
         }
     });
+
+    client.on(Events.ChannelDelete, ch => { if (ch.guild) lockService.forget(ch.guild.id, ch.id).catch(() => {}); });
 
     // ── Interaction handler ───────────────────────────────────────────────────
     client.on(Events.InteractionCreate, async (interaction) => {

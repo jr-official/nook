@@ -11,7 +11,11 @@ const COMMAND_PERMISSIONS = {
     warns:  { flag: PermissionFlagsBits.ModerateMembers, label: 'moderate members' },
     case:   { flag: PermissionFlagsBits.ModerateMembers, label: 'moderate members' },
     purge:      { flag: PermissionFlagsBits.ManageMessages, label: 'manage messages' },
-    purgeuntil: { flag: PermissionFlagsBits.ManageMessages, label: 'manage messages' }
+    purgeuntil: { flag: PermissionFlagsBits.ManageMessages, label: 'manage messages' },
+    lock:       { flag: PermissionFlagsBits.ManageChannels, label: 'manage channels' },
+    unlock:     { flag: PermissionFlagsBits.ManageChannels, label: 'manage channels' },
+    lockdown:   { flag: PermissionFlagsBits.ManageChannels, label: 'manage channels' },
+    unlockdown: { flag: PermissionFlagsBits.ManageChannels, label: 'manage channels' }
 };
 
 module.exports = {

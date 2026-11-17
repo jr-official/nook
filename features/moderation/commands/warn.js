@@ -9,7 +9,8 @@ const {
     parseMembers, handleProofData, formatProofDisplay
 } = require('../utils/moderationUtils');
 const { generateCaseId } = require('../utils/caseID');
-const { WARN_POINT_THRESHOLD } = require('../config/moderationConfig');
+const modSettings = require('../services/modSettingsService');
+const escalationService = require('../services/escalationService');
 const warningService = require('../services/warningService');
 
 const REMOVE_PAGE_SIZE = 3;
@@ -145,7 +146,8 @@ module.exports = {
                 const caseId        = warning.caseId;
                 const totalWarnings = await warningService.getUserWarningCount(guild.id, target.user.id);
                 const points        = pointsBefore + severity;
-                const crossed       = WARN_POINT_THRESHOLD > 0 && pointsBefore < WARN_POINT_THRESHOLD && points >= WARN_POINT_THRESHOLD;
+                const alertAt       = modSettings.get(guild.id).warnAlertPoints;
+                const crossed       = alertAt > 0 && pointsBefore < alertAt && points >= alertAt;
 
                 let dmSent = false;
                 if (options.dm) {
@@ -178,8 +180,12 @@ module.exports = {
                 await logModeration(guild, {
                     type: 'warn', caseId, target: target.user, moderator: moderatorUser,
                     reason: options.reason, proof: proofData.data, totalWarnings, dmSent,
-                    severity, points, threshold: WARN_POINT_THRESHOLD, thresholdCrossed: crossed
+                    severity, points, threshold: alertAt, thresholdCrossed: crossed
                 });
+
+                // Automatic escalation (mute / kick / ban) when a tier's points were just reached.
+                const auto = await escalationService.maybeEscalate(guild, target.member, target.user, pointsBefore, points, caseId, context.client ?? guild.client);
+                if (auto) results.successful[results.successful.length - 1].auto = auto;
             } catch (error) {
                 console.error(`Failed to warn ${target.user?.tag}:`, error);
                 results.failed.push({ user: target.user, reason: error.message });
@@ -195,7 +201,7 @@ module.exports = {
                 name: `Warned (${results.successful.length})`,
                 inline: false,
                 value: results.successful.map(r =>
-                    `✅ **${r.user.tag}** (${r.user.id})\n   └ Case ID: \`${r.caseId}\` | Total: **${r.totalWarnings}** | Points: **${r.points}** (+${r.severity})${r.crossed ? ' 🚨 threshold reached' : ''} | DM: ${r.dmSent ? '✅' : '❌'}`
+                    `✅ **${r.user.tag}** (${r.user.id})\n   └ Case ID: \`${r.caseId}\` | Total: **${r.totalWarnings}** | Points: **${r.points}** (+${r.severity})${r.crossed ? ' 🚨 threshold reached' : ''} | DM: ${r.dmSent ? '✅' : '❌'}${r.auto ? `\n   └ ⚙️ ${r.auto.text}` : ''}`
                 ).join('\n')
             });
         }

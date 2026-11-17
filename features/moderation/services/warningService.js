@@ -2,11 +2,11 @@
 const { ObjectId } = require('mongodb');
 const databaseService = require('../../tickets/services/databaseService');
 const { generateCaseId } = require('../utils/caseID');
-const { WARN_DECAY_DAYS } = require('../config/moderationConfig');
+const modSettings = require('./modSettingsService');
 
 const clampSeverity = v => { const n = Math.trunc(Number(v)); return Number.isFinite(n) ? Math.min(3, Math.max(0, n)) : 0; };
 // Points a warning counts for right now (0 once it has decayed).
-const pointsOf = (w, now = Date.now(), decayDays = WARN_DECAY_DAYS) =>
+const pointsOf = (w, now = Date.now(), decayDays = modSettings.get(w.guildId).decayDays) =>
     decayDays > 0 && now - new Date(w.createdAt).getTime() > decayDays * 86400000 ? 0 : clampSeverity(w.severity);
 
 class WarningService {

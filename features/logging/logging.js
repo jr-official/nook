@@ -5,4 +5,9 @@ const memberLog = require('./memberLog');
 const serverLog = require('./serverLog');
 const voiceLog = require('./voiceLog');
 
-module.exports = (client) => { messageLog.register(client); memberLog.register(client); serverLog.register(client); voiceLog.register(client); };
+const settings = require('./settingsService');
+
+module.exports = (client) => {
+    settings.load();      // saved dashboard settings; handlers use defaults until this finishes
+    messageLog.register(client); memberLog.register(client); serverLog.register(client); voiceLog.register(client);
+};

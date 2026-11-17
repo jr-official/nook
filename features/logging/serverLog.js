@@ -19,17 +19,17 @@ function register(client) {
     const safe = (name, fn) => async (...a) => { try { await fn(...a); } catch (err) { console.error(`[logging] ${name}:`, err.message); } };
 
     client.on(Events.ChannelCreate, safe('channelCreate', async ch => {
-        if (!ch.guild || !eventOn('channel_create')) return;
+        if (!ch.guild || !eventOn('channel_create', ch.guild)) return;
         const entry = await findAudit(ch.guild, AuditLogEvent.ChannelCreate, ch.id);
         await send(ch.guild, 'server', withBy(embed('#43b581', '➕ Channel created', `${kind(ch)} channel **${cut(ch.name)}** (<#${ch.id}>)`), entry));
     }));
     client.on(Events.ChannelDelete, safe('channelDelete', async ch => {
-        if (!ch.guild || !eventOn('channel_delete')) return;
+        if (!ch.guild || !eventOn('channel_delete', ch.guild)) return;
         const entry = await findAudit(ch.guild, AuditLogEvent.ChannelDelete, ch.id);
         await send(ch.guild, 'server', withBy(embed('#ff5555', '➖ Channel deleted', `${kind(ch)} channel **${cut(ch.name)}** (${ch.id})`), entry));
     }));
     client.on(Events.ChannelUpdate, safe('channelUpdate', async (a, b) => {
-        if (!b.guild || !eventOn('channel_update')) return;
+        if (!b.guild || !eventOn('channel_update', b.guild)) return;
         const diffs = [];
         if (a.name !== b.name) diffs.push(`Name: **${cut(a.name)}** → **${cut(b.name)}**`);
         if (a.topic !== b.topic) diffs.push(`Topic: ${cut(a.topic ?? 'none', 200)} → ${cut(b.topic ?? 'none', 200)}`);
@@ -44,11 +44,11 @@ function register(client) {
     }));
 
     client.on(Events.ThreadCreate, safe('threadCreate', async (t, isNew) => {
-        if (!t.guild || !isNew || !eventOn('thread_create') || isIgnored(t.parentId)) return;
+        if (!t.guild || !isNew || !eventOn('thread_create', t.guild) || isIgnored(t.guild, t.parentId)) return;
         await send(t.guild, 'server', embed('#43b581', '🧵 Thread created', `**${cut(t.name)}** (<#${t.id}>) in <#${t.parentId}>`));
     }));
     client.on(Events.ThreadUpdate, safe('threadUpdate', async (a, b) => {
-        if (!b.guild || !eventOn('thread_update') || isIgnored(b.parentId)) return;
+        if (!b.guild || !eventOn('thread_update', b.guild) || isIgnored(b.guild, b.parentId)) return;
         const d = [];
         if (a.name !== b.name) d.push(`Name: **${cut(a.name)}** → **${cut(b.name)}**`);
         if (a.archived !== b.archived) d.push(b.archived ? 'Archived' : 'Unarchived');
@@ -56,22 +56,22 @@ function register(client) {
         if (d.length) await send(b.guild, 'server', embed('#f0b232', '🧵 Thread updated', `<#${b.id}>\n${d.join('\n')}`));
     }));
     client.on(Events.ThreadDelete, safe('threadDelete', async t => {
-        if (!t.guild || !eventOn('thread_delete') || isIgnored(t.parentId)) return;
+        if (!t.guild || !eventOn('thread_delete', t.guild) || isIgnored(t.guild, t.parentId)) return;
         await send(t.guild, 'server', embed('#ff5555', '🧵 Thread deleted', `**${cut(t.name)}** (${t.id})`));
     }));
 
     client.on(Events.GuildRoleCreate, safe('roleCreate', async r => {
-        if (!eventOn('role_create')) return;
+        if (!eventOn('role_create', r.guild)) return;
         const entry = await findAudit(r.guild, AuditLogEvent.RoleCreate, r.id);
         await send(r.guild, 'server', withBy(embed('#43b581', '➕ Role created', `**${cut(r.name)}** (${r.id})`), entry));
     }));
     client.on(Events.GuildRoleDelete, safe('roleDelete', async r => {
-        if (!eventOn('role_delete')) return;
+        if (!eventOn('role_delete', r.guild)) return;
         const entry = await findAudit(r.guild, AuditLogEvent.RoleDelete, r.id);
         await send(r.guild, 'server', withBy(embed('#ff5555', '➖ Role deleted', `**${cut(r.name)}** (${r.id})`), entry));
     }));
     client.on(Events.GuildRoleUpdate, safe('roleUpdate', async (a, b) => {
-        if (!eventOn('role_update')) return;
+        if (!eventOn('role_update', b.guild)) return;
         const d = [];
         if (a.name !== b.name) d.push(`Name: **${cut(a.name)}** → **${cut(b.name)}**`);
         if (a.color !== b.color) d.push(`Colour: #${a.color.toString(16).padStart(6, '0')} → #${b.color.toString(16).padStart(6, '0')}`);
@@ -86,7 +86,7 @@ function register(client) {
     }));
 
     client.on(Events.GuildUpdate, safe('guildUpdate', async (a, b) => {
-        if (!eventOn('server_update')) return;
+        if (!eventOn('server_update', b)) return;
         const d = [];
         if (a.name !== b.name) d.push(`Name: **${cut(a.name)}** → **${cut(b.name)}**`);
         if (a.icon !== b.icon) d.push('Icon changed');
@@ -100,9 +100,9 @@ function register(client) {
         await send(b, 'server', withBy(embed('#f0b232', '⚙️ Server updated', d.join('\n')), entry));
     }));
 
-    client.on(Events.GuildEmojiCreate, safe('emojiCreate', async e => { if (eventOn('emoji_change')) await send(e.guild, 'server', embed('#43b581', '😀 Emoji added', `**:${e.name}:** (${e.id})`)); }));
-    client.on(Events.GuildEmojiDelete, safe('emojiDelete', async e => { if (eventOn('emoji_change')) await send(e.guild, 'server', embed('#ff5555', '😀 Emoji removed', `**:${e.name}:** (${e.id})`)); }));
-    client.on(Events.GuildEmojiUpdate, safe('emojiUpdate', async (a, b) => { if (eventOn('emoji_change') && a.name !== b.name) await send(b.guild, 'server', embed('#f0b232', '😀 Emoji renamed', `:${a.name}: → :${b.name}:`)); }));
+    client.on(Events.GuildEmojiCreate, safe('emojiCreate', async e => { if (eventOn('emoji_change', e.guild)) await send(e.guild, 'server', embed('#43b581', '😀 Emoji added', `**:${e.name}:** (${e.id})`)); }));
+    client.on(Events.GuildEmojiDelete, safe('emojiDelete', async e => { if (eventOn('emoji_change', e.guild)) await send(e.guild, 'server', embed('#ff5555', '😀 Emoji removed', `**:${e.name}:** (${e.id})`)); }));
+    client.on(Events.GuildEmojiUpdate, safe('emojiUpdate', async (a, b) => { if (eventOn('emoji_change', b.guild) && a.name !== b.name) await send(b.guild, 'server', embed('#f0b232', '😀 Emoji renamed', `:${a.name}: → :${b.name}:`)); }));
 }
 
 module.exports = { register };

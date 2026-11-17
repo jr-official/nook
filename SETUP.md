@@ -1,5 +1,8 @@
 # Nook setup checklist
 
+> Log channels, event switches and ignored channels can now be set on the dashboard (Logging page). A saved dashboard
+> setting beats the variables below, which stay as a fallback.
+
 ## Railway variables
 | Variable | Needed for | Notes |
 |---|---|---|

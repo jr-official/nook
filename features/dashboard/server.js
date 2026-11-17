@@ -9,6 +9,7 @@ const { requireManager, HttpError } = require('./services/guildAccess');
 const levelingApi = require('./api/levelingApi');
 const publicApi = require('./api/publicApi');
 const moderationApi = require('./api/moderationApi');
+const loggingApi = require('./api/loggingApi');
 const ticketsApi = require('./api/ticketsApi');
 const { PermissionFlagsBits } = require('discord.js');
 
@@ -73,6 +74,8 @@ function createServer(client) {
         ['GET',  /^\/api\/guilds\/(\d+)\/moderation\/warnings$/,     moderationApi.listWarnings],
         ['GET',  /^\/api\/guilds\/(\d+)\/moderation\/cases$/,        moderationApi.listCases],
         ['DELETE', /^\/api\/guilds\/(\d+)\/moderation\/warnings\/([A-Za-z0-9-]{1,32})$/, moderationApi.removeWarning],
+        ['GET',  /^\/api\/guilds\/(\d+)\/logging$/,                  loggingApi.getLogging],
+        ['PUT',  /^\/api\/guilds\/(\d+)\/logging$/,                  loggingApi.putLogging],
         ['GET',  /^\/api\/guilds\/(\d+)\/tickets$/,                 ticketsApi.getTickets],
         ['GET',  /^\/api\/guilds\/(\d+)\/tickets\/list$/,            ticketsApi.listTickets]
     ];

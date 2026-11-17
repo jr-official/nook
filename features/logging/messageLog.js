@@ -17,7 +17,7 @@ function describe(msg) {
 function register(client) {
     client.on(Events.MessageDelete, async msg => {
         try {
-            if (!eventOn('msg_delete') || !msg.guild || msg.author?.bot || isLogChannelId(msg.guild, msg.channelId) || isIgnored(msg.channelId, msg.channel?.parentId)) return;
+            if (!eventOn('msg_delete', msg.guild) || !msg.guild || msg.author?.bot || isLogChannelId(msg.guild, msg.channelId) || isIgnored(msg.guild, msg.channelId, msg.channel?.parentId)) return;
             const ch = logChannel(msg.guild, 'message'); if (!ch) return;
             const body = describe(msg);
             const e = new EmbedBuilder().setColor('#ff5555').setTitle('🗑️ Message deleted').setTimestamp()
@@ -42,7 +42,7 @@ function register(client) {
 
     client.on(Events.MessageUpdate, async (before, after) => {
         try {
-            if (!eventOn('msg_edit') || !after.guild || after.author?.bot || isLogChannelId(after.guild, after.channelId) || isIgnored(after.channelId, after.channel?.parentId)) return;
+            if (!eventOn('msg_edit', after.guild) || !after.guild || after.author?.bot || isLogChannelId(after.guild, after.channelId) || isIgnored(after.guild, after.channelId, after.channel?.parentId)) return;
             if (before.partial || before.content == null || after.content == null || before.content === after.content) return;
             const ch = logChannel(after.guild, 'message'); if (!ch) return;
             const e = new EmbedBuilder().setColor('#f0b232').setTitle('✏️ Message edited').setTimestamp()
@@ -59,7 +59,7 @@ function register(client) {
 
     client.on(Events.MessageBulkDelete, async (messages, channel) => {
         try {
-            const guild = channel.guild; if (!eventOn('msg_purge') || !guild || isLogChannelId(guild, channel.id) || isIgnored(channel.id, channel.parentId)) return;
+            const guild = channel.guild; if (!eventOn('msg_purge', guild) || !guild || isLogChannelId(guild, channel.id) || isIgnored(guild, channel.id, channel.parentId)) return;
             const ch = logChannel(guild, 'message'); if (!ch) return;
             const list = [...messages.values()].sort((a, b) => (a.createdTimestamp ?? 0) - (b.createdTimestamp ?? 0));
             const known = list.filter(m => m.content != null || m.author);
